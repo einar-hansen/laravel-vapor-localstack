@@ -1,5 +1,18 @@
 name: laravel-vapor-localstack
 services:
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/vapor.conf
+      - .:/var/task
+    ports:
+      - "${FORWARD_APP_PORT:-8000}:8000"
+    restart: unless-stopped
+    networks:
+      - laravel-vapor-network
+    depends_on:
+      - node
+      - php-fpm
   php-fpm:
     image: laravelphp/vapor:php83-arm
     command: [ "php-fpm" ]
