@@ -68,6 +68,24 @@ Follow these steps to set up and run the project:
 
 ## Development
 
+### Shell / CLI
+
+You can enter a running container by using the `exec` command:
+
+```bash
+# Shell
+docker compose -f docker-compose.yml exec php-fpm sh
+
+# Open Tinker
+docker compose -f docker-compose.yml exec php-fpm php artisan tinker
+
+# Open Node shell
+docker compose -f docker-compose.yml exec node sh
+
+# Open Localstack shell
+docker compose -f docker-compose.yml exec localstack sh
+```
+
 ### Composer
 
 The Laravel Vapor PHP image doesn't include Composer by default. We use a script to download it on-demand:
@@ -78,6 +96,9 @@ The Laravel Vapor PHP image doesn't include Composer by default. We use a script
 
 # Run Composer commands
 docker compose run --rm php-fpm php composer.phar [command]
+
+# Run Composer inside the PHP container
+docker compose -f docker-compose.yml exec php-fpm php composer.phar [command]
 ```
 
 ### Node
@@ -90,6 +111,9 @@ docker compose run --rm node npm install
 
 # Run npm commands
 docker compose run --rm node npm [command]
+
+# Run npm commands inside the node container
+docker compose -f docker-compose.yml exec node npm [command]
 ```
 
 ### Laravel Artisan
@@ -97,7 +121,7 @@ docker compose run --rm node npm [command]
 Execute Artisan commands within the Docker environment:
 
 ```bash
-docker compose run --rm php-fpm php artisan [command]
+docker compose -f docker-compose.yml exec php-fpm php artisan tinker
 ```
 
 ## Localstack
@@ -113,7 +137,11 @@ Localstack is configured in the `docker-compose.yml` file and starts automatical
 Use the AWS CLI with the `--endpoint-url` parameter to interact with Localstack:
 
 ```bash
-aws --endpoint-url=http://localhost:4566 s3 ls
+docker compose -f docker-compose.yml exec localstack sh
+
+# Inside the Localstack container you can run awslocal
+awslocal [command]
+# Example: awslocal sqs create-queue --queue-name my-queue
 ```
 
 ### Init Script
