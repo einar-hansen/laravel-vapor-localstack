@@ -13,6 +13,19 @@ services:
       - laravel-vapor-network
     depends_on:
       - pgsql
+  node:
+    image: node:22-alpine
+    command: [ "npm" ,"run", "dev" ]
+    working_dir: '/var/task'
+    volumes:
+      - ".:/var/task"
+    ports:
+      - "${VITE_FORWARD_PORT:-5174}:${VITE_FORWARD_PORT:-5174}"
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    networks:
+      - laravel-vapor-network
   pgsql:
     image: postgres:13.11-alpine
     platform: linux/x86_64
