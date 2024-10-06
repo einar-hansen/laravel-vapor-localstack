@@ -1,0 +1,95 @@
+name: laravel-vapor-localstack
+services:
+  nginx:
+    image: nginx:latest
+    volumes:
+      - ./docker/nginx/nginx.conf:/etc/nginx/conf.d/vapor.conf
+      - .:/var/task
+    ports:
+      - "${FORWARD_APP_PORT:-8000}:8000"
+    restart: unless-stopped
+    networks:
+      - laravel-vapor-network
+    depends_on:
+      - node
+      - php-fpm
+  php-fpm:
+    image: laravelphp/vapor:php83-arm
+    command: [ "php-fpm" ]
+    working_dir: '/var/task'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/var/task
+    restart: unless-stopped
+    networks:
+      - laravel-vapor-network
+    depends_on:
+      - localstack
+      - pgsql
+  node:
+    image: node:22-alpine
+    command: [ "npm" ,"run", "dev" ]
+    working_dir: '/var/task'
+    volumes:
+      - ".:/var/task"
+    ports:
+      - "${VITE_FORWARD_PORT:-5174}:${VITE_FORWARD_PORT:-5174}"
+    restart: unless-stopped
+    environment:
+      NODE_ENV: development
+    networks:
+      - laravel-vapor-network
+  pgsql:
+    image: postgres:13.11-alpine
+    platform: linux/x86_64
+    ports:
+      - "${FORWARD_DB_PORT:-5432}:5432"
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
+      - "./docker/pgsql/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql"
+    environment:
+      PGPASSWORD: "${DB_PASSWORD:-secret}"
+      POSTGRES_DB: "${DB_DATABASE:-laravel}"
+      POSTGRES_USER: "${DB_USERNAME:-postgres}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-secret}"
+      POSTGRES_TEST_DB: "${DB_TEST_DATABASE:-phpunit}"
+    restart: unless-stopped
+    networks:
+      - laravel-vapor-network
+    healthcheck:
+      test:
+        [ "CMD","pg_isready","-q","-d","${DB_DATABASE}","-U","${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+  localstack:
+    image: localstack/localstack
+    ports:
+      - '4566:4566' # Localstack dashboard
+      # - "127.0.0.1:4510-4559:4510-4559" # Uncomment to expose all services
+    volumes:
+      - './docker/localstack/init-aws.sh:/etc/localstack/init/ready.d/init-aws.sh'
+      - 'localstack:/var/lib/localstack'
+      - '/var/run/docker.sock:/var/run/docker.sock'
+    environment:
+      DEBUG: '${APP_DEBUG:-1}'
+      DYNAMODB_TABLE: '${DYNAMODB_CACHE_TABLE:-default}'
+      HOSTNAME_EXTERNAL: localstack
+      HOST_TMP_FOLDER: ${TMPDIR}
+      LOCALSTACK_HOST: localstack
+      PERSISTENCE: '${PERSISTENCE:-1}'
+      S3_BUCKET: '${AWS_BUCKET:-default}'
+      SERVICES: dynamodb,ses,sqs,s3
+      SES_EMAIL: '${MAIL_FROM_ADDRESS:-hello@example.com}'
+      SQS_ENDPOINT_STRATEGY: path
+      SQS_QUEUE: '${SQS_QUEUE:-default}'
+    networks:
+      - laravel-vapor-network
+networks:
+  laravel-vapor-network:
+    driver: bridge
+volumes:
+  localstack:
+    driver: local
+  postgres:
+    driver: local
