@@ -1,0 +1,30 @@
+name: laravel-vapor-localstack
+services:
+  pgsql:
+    image: postgres:13.11-alpine
+    platform: linux/x86_64
+    ports:
+      - "${FORWARD_DB_PORT:-5432}:5432"
+    volumes:
+      - "postgres:/var/lib/postgresql/data"
+      - "./docker/pgsql/init-test-db.sql:/docker-entrypoint-initdb.d/init-test-db.sql"
+    environment:
+      PGPASSWORD: "${DB_PASSWORD:-secret}"
+      POSTGRES_DB: "${DB_DATABASE:-laravel}"
+      POSTGRES_USER: "${DB_USERNAME:-postgres}"
+      POSTGRES_PASSWORD: "${DB_PASSWORD:-secret}"
+      POSTGRES_TEST_DB: "${DB_TEST_DATABASE:-phpunit}"
+    restart: unless-stopped
+    networks:
+      - laravel-vapor-network
+    healthcheck:
+      test:
+        [ "CMD","pg_isready","-q","-d","${DB_DATABASE}","-U","${DB_USERNAME}" ]
+      retries: 3
+      timeout: 5s
+networks:
+  laravel-vapor-network:
+    driver: bridge
+volumes:
+  postgres:
+    driver: local

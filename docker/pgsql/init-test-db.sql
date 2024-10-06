@@ -1,0 +1,3 @@
+CREATE DATABASE "phpunit";
+\c phpunit;
+GRANT ALL PRIVILEGES ON DATABASE "phpunit" TO "$POSTGRES_USER";
