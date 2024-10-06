@@ -1,5 +1,18 @@
 name: laravel-vapor-localstack
 services:
+  php-fpm:
+    image: laravelphp/vapor:php83-arm
+    command: [ "php-fpm" ]
+    working_dir: '/var/task'
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    volumes:
+      - .:/var/task
+    restart: unless-stopped
+    networks:
+      - laravel-vapor-network
+    depends_on:
+      - pgsql
   pgsql:
     image: postgres:13.11-alpine
     platform: linux/x86_64
